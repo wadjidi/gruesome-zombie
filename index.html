@@ -1,0 +1,343 @@
+<!doctype html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0f2547">
+<title>Tracking Luas</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,500..800&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+<style>
+:root{
+  --navy:#0f2547; --navy2:#1b3a66; --orange:#ea7317; --green:#10b981; --red:#ef4444;
+  --bg:#eef1f6; --sheet:#fff; --ink:#0f172a; --muted:#5b6b82; --line:#dfe5ee; --chip:#f3f6fa; --big:#1b3a66;
+  --disp:"Archivo","Arial Narrow",system-ui,sans-serif;
+  --body:"IBM Plex Sans",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+  color-scheme:light;
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){--bg:#081226;--sheet:#10203f;--ink:#e8eef9;--muted:#93a4c0;--line:#223559;--chip:#172a4e;--big:#fff;color-scheme:dark}
+}
+:root[data-theme="dark"]{--bg:#081226;--sheet:#10203f;--ink:#e8eef9;--muted:#93a4c0;--line:#223559;--chip:#172a4e;--big:#fff;color-scheme:dark}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{background:var(--bg);color:var(--ink);font-family:var(--body);-webkit-tap-highlight-color:transparent}
+button{font-family:inherit;cursor:pointer;border:0}
+button:disabled{opacity:.45;cursor:not-allowed}
+:focus-visible{outline:3px solid var(--orange);outline-offset:2px}
+
+.hero{background:var(--navy);padding-top:env(safe-area-inset-top,0px);padding-bottom:34px}
+.bar{display:flex;justify-content:space-between;align-items:center;padding:14px 18px 10px;max-width:620px;margin:0 auto;color:#fff}
+.bar h1{font-family:var(--disp);font-stretch:85%;font-weight:700;font-size:22px}
+.bar p{font-size:12px;color:#9fb3d6;margin-top:1px}
+.src{font-size:12px;font-weight:600;padding:6px 12px;border-radius:99px;background:rgba(255,255,255,.1);color:#fff;display:flex;gap:7px;align-items:center}
+.src i{width:8px;height:8px;border-radius:50%;background:#7b8cab}
+.src.wait i{background:#f59e0b}.src.on i{background:var(--green)}
+.mapbox{position:relative;max-width:596px;margin-inline:auto;border-radius:22px;overflow:hidden;aspect-ratio:11/8;
+  background-color:#0b1d3a;
+  background-image:linear-gradient(rgba(255,255,255,.055) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.055) 1px,transparent 1px),radial-gradient(circle at 50% 45%,#16346163,transparent 70%);
+  background-size:28px 28px,28px 28px,100% 100%;
+  box-shadow:inset 0 0 0 1px rgba(255,255,255,.1)}
+@media (max-width:640px){.mapbox{margin-inline:12px}}
+#map{width:100%;height:100%;display:block}
+.chip{position:absolute;font-size:12px;font-weight:600;color:#fff;background:rgba(8,18,38,.72);backdrop-filter:blur(6px);padding:6px 11px;border-radius:99px}
+#sig{top:10px;left:10px}
+#sig b{font-weight:700}
+#sig.ok b{color:#34d399}#sig.no b{color:#fca5a5}
+.north{position:absolute;top:10px;right:10px;width:34px;height:34px}
+.scale{position:absolute;left:12px;bottom:10px;color:#cfe0ff;font-size:11px;font-weight:600}
+.scale div{height:6px;border:2px solid #cfe0ff;border-top:0;margin-bottom:3px}
+.empty{position:absolute;inset:0;display:grid;place-content:center;text-align:center;color:#9db3d9;font-size:14px;line-height:1.5;padding:0 28px}
+
+.sheet{position:relative;margin-top:-26px;background:var(--bg);border-radius:28px 28px 0 0;padding:16px 14px 0;max-width:660px;margin-inline:auto}
+.card{background:var(--sheet);border:1px solid var(--line);border-radius:22px;padding:16px;margin-bottom:12px}
+.area{padding:18px 18px 16px}
+.area .lab{font-size:13px;color:var(--muted);font-weight:500}
+.area .big{display:flex;align-items:baseline;gap:8px;margin-top:2px;font-family:var(--disp);font-stretch:80%;font-weight:800;line-height:1}
+.area .big #aN{font-size:68px;letter-spacing:-1px;color:var(--big)}
+.area .big #aU{font-size:26px;color:var(--orange);font-weight:700}
+.area .alt{font-size:13px;color:var(--muted);margin-top:6px}
+.stats{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-top:14px}
+.stat{background:var(--chip);border-radius:14px;padding:10px 12px}
+.stat b{display:block;font-family:var(--disp);font-stretch:85%;font-size:20px;font-weight:700}
+.stat span{font-size:11.5px;color:var(--muted)}
+
+h2{font-size:15px;font-weight:600;margin-bottom:12px;display:flex;justify-content:space-between;align-items:center}
+.gauge{position:relative;height:12px;border-radius:99px;background:var(--chip);margin:6px 0 2px}
+#gFill{height:100%;border-radius:99px;background:var(--green);width:0;transition:width .2s,background .2s}
+#gTick{position:absolute;top:-5px;width:3px;height:22px;border-radius:2px;background:var(--orange)}
+.gl{display:flex;justify-content:space-between;font-size:11px;color:var(--muted)}
+input[type=range]{width:100%;accent-color:var(--orange);margin:12px 0 4px;height:28px}
+.hint{font-size:12px;color:var(--muted);line-height:1.55}
+.sw{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-top:12px;padding:12px 14px;background:var(--chip);border-radius:16px}
+.sw b{font-size:14px;font-weight:600;display:block}.sw small{font-size:12px;color:var(--muted)}
+.tg{position:relative;width:48px;height:28px;flex:none}
+.tg input{position:absolute;inset:0;opacity:0;width:100%;height:100%;margin:0;z-index:2;cursor:pointer}
+.tg s{position:absolute;inset:0;background:#b6c2d4;border-radius:99px;transition:.15s}
+.tg s::after{content:"";position:absolute;top:3px;left:3px;width:22px;height:22px;border-radius:50%;background:#fff;transition:.15s}
+.tg input:checked+s{background:var(--green)}.tg input:checked+s::after{left:23px}
+.tg input:focus-visible+s{outline:3px solid var(--orange);outline-offset:2px}
+.pos{display:grid;grid-template-columns:auto 1fr;gap:6px 14px;font-size:13px}
+.pos dt{color:var(--muted)}.pos dd{font-family:ui-monospace,Menlo,monospace;font-size:13px;text-align:right}
+
+table{width:100%;border-collapse:collapse;font-size:13px}
+th{text-align:left;font-weight:500;color:var(--muted);padding:4px 6px 8px;font-size:12px}
+td{padding:9px 6px;border-top:1px solid var(--line)}
+td.n{width:30px}
+td.n span{display:grid;place-items:center;width:24px;height:24px;border-radius:50%;background:var(--navy2);color:#fff;font-size:12px;font-weight:700}
+.co{font-family:ui-monospace,Menlo,monospace;font-size:12px}
+.q{font-weight:600;color:var(--green)}
+.tiny{background:var(--chip);color:var(--ink);font-weight:600;font-size:13px;padding:8px 14px;border-radius:99px}
+
+.dock{position:sticky;bottom:0;z-index:10;background:linear-gradient(transparent,var(--bg) 22%);padding:16px 14px calc(14px + env(safe-area-inset-bottom,0px));max-width:660px;margin-inline:auto}
+.main{position:relative;overflow:hidden;width:100%;padding:17px;border-radius:20px;font-size:17px;font-weight:700;color:#fff;background:var(--orange);box-shadow:0 8px 22px rgba(234,115,23,.35)}
+.main i{position:absolute;inset:0 auto 0 0;width:calc(var(--p,0)*100%);background:rgba(0,0,0,.22);transition:width .2s}
+.main span{position:relative}
+.row{display:grid;grid-template-columns:1fr 54px 54px;gap:8px;margin-top:8px}
+.row button{padding:13px;border-radius:16px;font-size:15px;font-weight:600;background:var(--sheet);color:var(--ink);border:1px solid var(--line)}
+.row .go{background:var(--navy2);color:#fff;border-color:transparent}
+.row .go.rec{background:var(--green)}
+.row .ic{font-size:18px;padding:0}
+.row .ic.del{color:var(--red)}
+.toast{position:fixed;left:50%;bottom:calc(150px + env(safe-area-inset-bottom,0px));transform:translate(-50%,8px);background:var(--ink);color:var(--bg);font-size:13px;font-weight:500;padding:11px 18px;border-radius:14px;z-index:30;opacity:0;transition:.25s;max-width:90vw;text-align:center;pointer-events:none}
+.toast.show{opacity:1;transform:translate(-50%,0)}
+.pulse{transform-box:fill-box;transform-origin:center;animation:pl 1.8s ease-out infinite}
+@keyframes pl{from{transform:scale(.6);opacity:.7}to{transform:scale(1.9);opacity:0}}
+@media (prefers-reduced-motion:reduce){.pulse{animation:none}*{transition:none!important}}
+</style>
+</head>
+<body>
+
+<header class="hero">
+  <div class="bar">
+    <div><h1>Tracking Luas</h1><p>Ukur lahan dengan GPS, titik demi titik</p></div>
+    <div class="src" id="src"><i></i><span id="srcT">GPS mati</span></div>
+  </div>
+  <div class="mapbox">
+    <svg id="map" viewBox="0 0 110 80" preserveAspectRatio="xMidYMid meet" aria-label="Peta jalur dan poligon"></svg>
+    <div class="chip" id="sig"><span id="sigT">Belum ada sinyal</span></div>
+    <svg class="north" viewBox="0 0 34 34" aria-hidden="true"><circle cx="17" cy="17" r="16" fill="rgba(8,18,38,.72)"/><path d="M17 6l5 14-5-3-5 3z" fill="#ea7317"/><path d="M17 17l5 3-5 8-5-8z" fill="#cfe0ff" opacity=".55"/></svg>
+    <div class="scale"><div id="sc" style="width:60px"></div><span id="scT">10 m</span></div>
+    <div class="empty" id="empty"><span id="emptyT">Tekan Mulai GPS, lalu berdiri di tiap pojok lahan dan tekan Tetapkan titik sudut.</span></div>
+  </div>
+</header>
+
+<main class="sheet">
+  <section class="card area" aria-live="polite">
+    <div class="lab">Luas poligon</div>
+    <div class="big"><span id="aN">0</span><span id="aU">m²</span></div>
+    <div class="alt" id="aAlt">Butuh minimal 3 titik sudut</div>
+    <div class="stats">
+      <div class="stat"><b id="kV">0</b><span>Titik sudut</span></div>
+      <div class="stat"><b id="kP">0 m</b><span>Keliling</span></div>
+      <div class="stat"><b id="kA">–</b><span>Akurasi rata-rata</span></div>
+    </div>
+  </section>
+
+  <section class="card">
+    <h2>Gerbang mutu</h2>
+    <div class="hint">Akurasi sekarang dibanding batas yang kamu izinkan</div>
+    <div class="gauge"><div id="gFill"></div><div id="gTick"></div></div>
+    <div class="gl"><span>0 m</span><span>15 m</span></div>
+    <input type="range" id="th" min="2" max="15" step="1" value="5" aria-label="Ambang akurasi">
+    <div class="hint">Titik ditolak otomatis bila akurasinya lebih buruk dari <b>±<span id="thV">5</span> m</b>. GPS HP biasanya ±3–8 m; longgarkan ke ±10 m bila sinyal sulit.</div>
+    <label class="sw"><span><b>Catat otomatis tiap 8 m</b><small>Mode kasar, pembanding averaging manual</small></span>
+      <span class="tg"><input type="checkbox" id="auto"><s></s></span></label>
+  </section>
+
+  <section class="card">
+    <h2>Posisi sekarang</h2>
+    <dl class="pos">
+      <dt>Lintang</dt><dd id="pLat">–</dd>
+      <dt>Bujur</dt><dd id="pLng">–</dd>
+      <dt>Pembaruan terakhir</dt><dd id="pT">–</dd>
+      <dt>Fix diterima</dt><dd id="pN">0</dd>
+    </dl>
+  </section>
+
+  <section class="card">
+    <h2>Daftar titik sudut <button class="tiny" id="exp">Ekspor GeoJSON</button></h2>
+    <table><thead><tr><th></th><th>Koordinat</th><th>Akurasi</th></tr></thead><tbody id="tb"></tbody></table>
+    <div class="hint" id="tbE">Belum ada titik. Data tersimpan otomatis di perangkat ini.</div>
+  </section>
+</main>
+
+<div class="dock">
+  <button class="main" id="vtx" disabled><i></i><span id="vtxT">Tetapkan titik sudut</span></button>
+  <div class="row">
+    <button class="go" id="go">Mulai GPS</button>
+    <button class="ic" id="undo" aria-label="Batalkan titik terakhir">↩</button>
+    <button class="ic del" id="reset" aria-label="Reset poligon">✕</button>
+  </div>
+</div>
+<div class="toast" id="toast" role="status"></div>
+
+<script>
+(function(){
+"use strict";
+var $=function(i){return document.getElementById(i)};
+var NS="http://www.w3.org/2000/svg", LS="track_luas_final_v1", NEED=10;
+var state="off"; /* off | wait | on */
+var threshold=5,auto=false,watchId=null,origin=null,avg=null,samples=[],tt=null,wake=null,fixes=0;
+var live=null,vertices=[];
+var nf=function(n,d){return n.toLocaleString("id-ID",{minimumFractionDigits:d||0,maximumFractionDigits:d||0})};
+
+function toXY(lat,lng){return{x:(lng-origin.lng)*111320*Math.cos(origin.lat*Math.PI/180),y:-(lat-origin.lat)*110540}}
+function load(){
+  try{vertices=(JSON.parse(localStorage.getItem(LS)||"[]")).filter(function(v){return v&&v.lat!=null})}catch(e){vertices=[]}
+  if(vertices.length){origin={lat:vertices[0].lat,lng:vertices[0].lng};vertices.forEach(function(v){var p=toXY(v.lat,v.lng);v.x=p.x;v.y=p.y})}
+}
+function save(){try{localStorage.setItem(LS,JSON.stringify(vertices))}catch(e){}}
+function toast(m,v){var t=$("toast");t.textContent=m;t.classList.add("show");clearTimeout(tt);tt=setTimeout(function(){t.classList.remove("show")},3000);if(v&&navigator.vibrate)navigator.vibrate(v)}
+
+/* GPS */
+function startGps(){
+  if(!navigator.geolocation){toast("GPS tidak tersedia di perangkat ini");return}
+  if(!window.isSecureContext||location.protocol==="file:"){toast("GPS butuh alamat https. Buka lewat tautan https, bukan file lokal");return}
+  state="wait";fixes=0;render();toast("Menghubungkan GPS…");
+  watchId=navigator.geolocation.watchPosition(onFix,function(e){
+    stopGps(true);
+    toast(e.code===1?"Izin lokasi ditolak. Aktifkan izin Lokasi untuk browser, lalu coba lagi":"GPS gagal mendapat posisi. Pindah ke area terbuka lalu coba lagi");
+  },{enableHighAccuracy:true,maximumAge:1000,timeout:20000});
+  try{if(navigator.wakeLock)navigator.wakeLock.request("screen").then(function(w){wake=w}).catch(function(){})}catch(e){}
+}
+function stopGps(silent){
+  if(watchId!==null&&navigator.geolocation)navigator.geolocation.clearWatch(watchId);
+  watchId=null;state="off";live=null;avg=null;samples=[];
+  if(wake){try{wake.release()}catch(e){}wake=null}
+  if(!silent)toast("GPS dihentikan");
+  render();
+}
+function onFix(p){
+  var lat=p.coords.latitude,lng=p.coords.longitude,acc=p.coords.accuracy||30;
+  if(!origin){origin={lat:lat,lng:lng};toast("Titik nol terkunci. Mulai kelilingi batas lahan")}
+  var xy=toXY(lat,lng);
+  live={x:xy.x,y:xy.y,acc:acc,lat:lat,lng:lng,t:new Date()};
+  state="on";fixes++;
+  if(avg){
+    samples.push({x:live.x,y:live.y,acc:acc,lat:lat,lng:lng});avg.n=samples.length;
+    if(avg.n>=NEED)finishAvg();
+  }
+  autoAdd();render();
+}
+function finishAvg(){
+  var n=samples.length,m=function(k){return samples.reduce(function(a,p){return a+p[k]},0)/n};
+  var r={x:m("x"),y:m("y"),acc:m("acc"),lat:m("lat"),lng:m("lng")};
+  samples=[];avg=null;
+  if(r.acc>threshold)toast("Ditolak: akurasi rata-rata ±"+nf(r.acc,1)+" m melebihi ±"+threshold+" m. Coba lagi");
+  else{vertices.push(r);save();toast("Titik "+vertices.length+" terkunci ±"+nf(r.acc,1)+" m (rata-rata "+n+" sampel)",[60,40,60])}
+}
+function autoAdd(){
+  if(!auto||!live||live.acc>threshold)return;
+  var l=vertices[vertices.length-1];
+  if(!l||Math.hypot(l.x-live.x,l.y-live.y)>=8){
+    vertices.push({x:live.x,y:live.y,acc:live.acc,lat:live.lat,lng:live.lng});save();
+    if(navigator.vibrate)navigator.vibrate(40);
+  }
+}
+
+/* hitung */
+function shoelace(p){var s=0;for(var i=0;i<p.length;i++){var a=p[i],b=p[(i+1)%p.length];s+=a.x*b.y-b.x*a.y}return Math.abs(s)/2}
+function perim(p){var s=0;if(p.length<2)return 0;for(var i=0;i<p.length;i++){var a=p[i],b=p[(i+1)%p.length];s+=Math.hypot(a.x-b.x,a.y-b.y)}return s}
+
+/* peta */
+var NSV='vector-effect="non-scaling-stroke"';
+function renderMap(){
+  var svg=$("map"),vb={x:0,y:0,w:110,h:80},P=vertices.slice();
+  if(live)P.push(live);
+  if(P.length){
+    var xs=P.map(function(p){return p.x}),ys=P.map(function(p){return p.y});
+    var x0=Math.min.apply(0,xs),x1=Math.max.apply(0,xs),y0=Math.min.apply(0,ys),y1=Math.max.apply(0,ys);
+    var pad=Math.max(15,(x1-x0+y1-y0)/6),w=x1-x0+2*pad,h=y1-y0+2*pad,R=1.375;
+    if(w/h>R)h=w/R;else w=h*R;
+    vb={x:(x0+x1)/2-w/2,y:(y0+y1)/2-h/2,w:w,h:h};
+  }
+  svg.setAttribute("viewBox",vb.x+" "+vb.y+" "+vb.w+" "+vb.h);
+  var k=vb.w/110,h2="",pts=function(a){return a.map(function(p){return p.x+","+p.y}).join(" ")};
+  h2+='<defs><pattern id="ht" width="'+3*k+'" height="'+3*k+'" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><line x1="0" y1="0" x2="0" y2="'+3*k+'" stroke="#ea7317" stroke-opacity=".5" stroke-width="'+.7*k+'"/></pattern></defs>';
+  if(vertices.length>=3)h2+='<polygon points="'+pts(vertices)+'" fill="rgba(234,115,23,.2)"/><polygon points="'+pts(vertices)+'" fill="url(#ht)" stroke="#ea7317" stroke-width="2.5" stroke-linejoin="round" '+NSV+'/>';
+  else if(vertices.length===2)h2+='<line x1="'+vertices[0].x+'" y1="'+vertices[0].y+'" x2="'+vertices[1].x+'" y2="'+vertices[1].y+'" stroke="#ea7317" stroke-width="2.5" '+NSV+'/>';
+  var last=vertices[vertices.length-1];
+  if(last&&live)h2+='<line x1="'+last.x+'" y1="'+last.y+'" x2="'+live.x+'" y2="'+live.y+'" stroke="#fff" stroke-opacity=".55" stroke-width="1.5" stroke-dasharray="3 4" '+NSV+'/>';
+  vertices.forEach(function(v,i){
+    h2+='<circle cx="'+v.x+'" cy="'+v.y+'" r="'+2.1*k+'" fill="#fff" stroke="#0f2547" stroke-width="'+.9*k+'"/><text x="'+v.x+'" y="'+(v.y+1.15*k)+'" font-size="'+3*k+'" font-weight="700" text-anchor="middle" fill="#0f2547" style="font-family:Archivo,sans-serif">'+(i+1)+'</text>';
+  });
+  if(live){
+    var ok=live.acc<=threshold,c=ok?"#34d399":"#f87171",rr=Math.min(live.acc,vb.w*.4);
+    h2+='<circle cx="'+live.x+'" cy="'+live.y+'" r="'+rr+'" fill="'+c+'" fill-opacity=".14" stroke="'+c+'" stroke-opacity=".6" stroke-width="1" '+NSV+'/>';
+    h2+='<circle class="pulse" cx="'+live.x+'" cy="'+live.y+'" r="'+2*k+'" fill="'+c+'"/>';
+    h2+='<circle cx="'+live.x+'" cy="'+live.y+'" r="'+1.7*k+'" fill="'+c+'" stroke="#fff" stroke-width="'+.6*k+'"/>';
+  }
+  svg.innerHTML=h2;
+  var mpp=vb.w/(svg.clientWidth||320),L=[1,2,5,10,20,50,100,200,500,1000],best=1;
+  L.forEach(function(l){if(l/mpp<=90)best=l});
+  $("sc").style.width=best/mpp+"px";$("scT").textContent=best>=1000?"1 km":best+" m";
+}
+
+function render(){
+  renderMap();
+  var A=vertices.length>=3?shoelace(vertices):0,Pm=perim(vertices),big=A>=10000;
+  $("aN").textContent=big?nf(A/10000,3):nf(A,0);
+  $("aU").textContent=big?"ha":"m²";
+  $("aAlt").textContent=vertices.length<3?"Butuh minimal 3 titik sudut":(big?"= "+nf(A,0)+" m²":"= "+nf(A/10000,4)+" ha");
+  $("kV").textContent=vertices.length;
+  $("kP").textContent=nf(Pm,0)+" m";
+  $("kA").textContent=vertices.length?"±"+nf(vertices.reduce(function(s,v){return s+v.acc},0)/vertices.length,1)+" m":"–";
+
+  var acc=live?live.acc:null,ok=live&&acc<=threshold;
+  $("sig").className="chip "+(live?(ok?"ok":"no"):"");
+  $("sigT").innerHTML=live?"±<b>"+nf(acc,1)+" m</b> · "+(ok?"lolos":"ditolak"):(state==="wait"?"Mencari sinyal…":"Belum ada sinyal");
+  $("gFill").style.width=live?Math.min(acc/15,1)*100+"%":"0";
+  $("gFill").style.background=ok?"var(--green)":"var(--red)";
+  $("gTick").style.left="calc("+threshold/15*100+"% - 1px)";
+  $("src").className="src "+state;
+  $("srcT").textContent=state==="on"?"GPS aktif":(state==="wait"?"Mencari sinyal":"GPS mati");
+  $("go").textContent=state==="off"?"Mulai GPS":"Hentikan GPS";
+  $("go").className="go"+(state==="on"?" rec":"");
+  $("vtx").disabled=!live;
+  $("vtxT").textContent=avg?"Merata-ratakan "+avg.n+"/"+NEED+" sampel":"Tetapkan titik sudut";
+  document.querySelector(".main").style.setProperty("--p",avg?avg.n/NEED:0);
+  $("empty").style.display=(live||vertices.length)?"none":"grid";
+  $("emptyT").textContent=state==="wait"?"Mencari sinyal GPS. Berdiri di area terbuka dan tunggu beberapa detik.":"Tekan Mulai GPS, lalu berdiri di tiap pojok lahan dan tekan Tetapkan titik sudut.";
+
+  $("pLat").textContent=live?live.lat.toFixed(6):"–";
+  $("pLng").textContent=live?live.lng.toFixed(6):"–";
+  $("pT").textContent=live?live.t.toLocaleTimeString("id-ID"):"–";
+  $("pN").textContent=fixes;
+
+  var h="";
+  vertices.forEach(function(v,i){
+    h+='<tr><td class="n"><span>'+(i+1)+'</span></td><td class="co">'+v.lat.toFixed(6)+", "+v.lng.toFixed(6)+'</td><td class="q">±'+nf(v.acc,1)+' m</td></tr>';
+  });
+  $("tb").innerHTML=h;$("tbE").style.display=vertices.length?"none":"block";
+}
+
+/* ekspor */
+$("exp").addEventListener("click",function(){
+  if(vertices.length<3){toast("Minimal 3 titik untuk ekspor");return}
+  var c=vertices.map(function(v){return[v.lng,v.lat]});c.push(c[0]);
+  var A=shoelace(vertices);
+  var gj={type:"Feature",properties:{area_m2:Number(A.toFixed(2)),area_ha:Number((A/10000).toFixed(4)),perimeter_m:Number(perim(vertices).toFixed(2)),n_points:vertices.length},geometry:{type:"Polygon",coordinates:[c]}};
+  var d=JSON.stringify(gj,null,2);
+  try{var a=document.createElement("a");a.href=URL.createObjectURL(new Blob([d],{type:"application/geo+json"}));a.download="tracking-luas-"+new Date().toISOString().slice(0,10)+".geojson";document.body.appendChild(a);a.click();document.body.removeChild(a);toast("GeoJSON diunduh. Buka di QGIS atau Google Earth")}
+  catch(e){toast("Unduhan diblokir di tampilan ini. Buka di tab browser sendiri");console.log(d)}
+});
+
+/* kontrol */
+$("go").addEventListener("click",function(){if(state==="off")startGps();else stopGps()});
+$("vtx").addEventListener("click",function(){
+  if(avg||!live)return;
+  samples=[];avg={n:0};toast("Diam di titik sudut. Mengumpulkan "+NEED+" sampel GPS…");render();
+});
+$("undo").addEventListener("click",function(){vertices.pop();save();render();toast("Titik terakhir dibatalkan")});
+$("reset").addEventListener("click",function(){vertices=[];save();render();toast("Poligon direset")});
+$("th").addEventListener("input",function(){threshold=+this.value;$("thV").textContent=threshold;render()});
+$("auto").addEventListener("change",function(){auto=this.checked;toast(auto?"Catat otomatis tiap 8 m aktif (mode kasar)":"Catat otomatis nonaktif. Pakai averaging untuk presisi")});
+document.addEventListener("visibilitychange",function(){
+  if(document.visibilityState==="visible"&&state!=="off"&&navigator.wakeLock){try{navigator.wakeLock.request("screen").then(function(w){wake=w}).catch(function(){})}catch(e){}}
+});
+
+load();render();
+window.addEventListener("resize",render);
+})();
+</script>
+</body>
+</html>
